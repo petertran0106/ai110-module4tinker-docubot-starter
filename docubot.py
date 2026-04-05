@@ -22,8 +22,11 @@ class DocuBot:
         # Load documents into memory
         self.documents = self.load_documents()  # List of (filename, text)
 
+        # Split each document into paragraph-level chunks for finer retrieval
+        self.chunks = self.chunk_documents(self.documents)  # List of (filename, paragraph_text)
+
         # Build a retrieval index (implemented in Phase 1)
-        self.index = self.build_index(self.documents)
+        self.index = self.build_index(self.chunks)
 
     # -----------------------------------------------------------
     # Document Loading
@@ -45,14 +48,41 @@ class DocuBot:
         return docs
 
     # -----------------------------------------------------------
+    # Chunking (paragraph-based)
+    # -----------------------------------------------------------
+
+    def chunk_documents(self, documents):
+        """
+        Splits each document into paragraph chunks by splitting on blank lines
+        (one or more consecutive empty lines).
+
+        Returns a flat list of (filename, paragraph_text) tuples, one per
+        non-empty paragraph. Short paragraphs (fewer than 5 words) are dropped
+        to avoid indexing headers or stray lines.
+
+        Strategy chosen: blank-line splitting keeps related sentences together
+        without needing any external libraries.
+        """
+        chunks = []
+        for filename, text in documents:
+            # Split on one-or-more blank lines
+            paragraphs = [p.strip() for p in text.split("\n\n")]
+            for para in paragraphs:
+                # Skip near-empty paragraphs like lone headings or blank lines
+                if len(para.split()) >= 5:
+                    chunks.append((filename, para))
+        return chunks
+
+    # -----------------------------------------------------------
     # Index Construction (Phase 1)
     # -----------------------------------------------------------
 
-    def build_index(self, documents):
+    def build_index(self, chunks):
         """
         TODO (Phase 1):
-        Build a tiny inverted index mapping lowercase words to the documents
-        they appear in.
+        Build a tiny inverted index mapping lowercase words to the chunks
+        (filename strings) they appear in. Now receives paragraph-level chunks
+        rather than whole documents.
 
         Example structure:
         {
@@ -64,7 +94,14 @@ class DocuBot:
         ignore punctuation if needed.
         """
         index = {}
-        # TODO: implement simple indexing
+        # TODO: consider stripping punctuation more thoroughly (e.g. using re.sub)
+        for filename, text in chunks:
+            for raw_token in text.split():
+                token = raw_token.lower().strip(".,!?;:\"'()[]")
+                if token not in index:
+                    index[token] = []
+                if filename not in index[token]:
+                    index[token].append(filename)
         return index
 
     # -----------------------------------------------------------
@@ -81,8 +118,14 @@ class DocuBot:
         - Count how many appear in the text
         - Return the count as the score
         """
-        # TODO: implement scoring
-        return 0
+        # TODO: improve by weighting rare words more (e.g. TF-IDF)
+        text_lower = text.lower()
+        score = 0
+        for raw_token in query.split():
+            token = raw_token.lower().strip(".,!?;:\"'()[]")
+            if token and token in text_lower:
+                score += 1
+        return score
 
     def retrieve(self, query, top_k=3):
         """
@@ -91,8 +134,16 @@ class DocuBot:
 
         Return a list of (filename, text) sorted by score descending.
         """
-        results = []
-        # TODO: implement retrieval logic
+        # TODO: use the index to skip chunks with zero query-word overlap
+        # before scoring, for efficiency on large corpora
+        scored = []
+        for filename, text in self.chunks:
+            score = self.score_document(query, text)
+            if score > 0:
+                scored.append((score, filename, text))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results = [(filename, text) for _, filename, text in scored]
         return results[:top_k]
 
     # -----------------------------------------------------------

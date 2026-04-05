@@ -72,18 +72,18 @@ You can reuse or adapt the queries from `dataset.py`.
 
 | Query | Naive LLM: helpful or harmful? | Retrieval only: helpful or harmful? | RAG: helpful or harmful? | Notes |
 |------|---------------------------------|--------------------------------------|---------------------------|-------|
-| Example: Where is the auth token generated? | | | | |
+| Example: Where is the auth token generated? | Harmful — confident but wrong. Listed OAuth, API Gateway, Node.js `jsonwebtoken`. Never mentioned `generate_access_token` in `auth_utils.py`. | Helpful — returned three real AUTH.md paragraphs including the correct function and env var. Hard to read as a direct answer. | Harmful — returned "I do not know based on the docs I have." Silent failure despite docs containing the answer. | RAG failure likely caused by query tokenization mismatch or empty chunk scoring. |
 | Example: How do I connect to the database? | | | | |
 | Example: Which endpoint lists all users? | | | | |
 | Example: How does a client refresh an access token? | | | | |
 
 **What patterns did you notice?**  
 
-- When does naive LLM look impressive but untrustworthy?  
-- When is retrieval only clearly better?  
-- When is RAG clearly better than both?
+- **When does naive LLM look impressive but untrustworthy?** When the question is about something common (like auth tokens), the LLM produces a polished, well-structured answer drawn from its training data — but that answer describes general patterns, not this specific application. It never mentions `generate_access_token`, `auth_utils.py`, or `AUTH_SECRET_KEY` because it has no access to the docs. The output looks authoritative but could send a developer in the wrong direction.
 
-> _Your answer here._
+- **When is retrieval only clearly better?** When accuracy matters more than readability. Retrieval only guarantees that every word shown came directly from the docs — no hallucination is possible. For verification tasks ("does the docs say X?") or when the user just needs a reference, it is more trustworthy than any LLM output.
+
+- **When is RAG clearly better than both?** RAG should be better when retrieval finds the right chunks and the LLM synthesizes them into a readable, direct answer. In that case it combines the accuracy of retrieval with the readability of generation. However, RAG silently fails when retrieval returns nothing — making it appear the docs don't contain the answer when they do. That silent failure is the most dangerous outcome.
 
 ---
 
