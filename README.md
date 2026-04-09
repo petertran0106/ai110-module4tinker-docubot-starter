@@ -16,6 +16,11 @@ The docs folder contains realistic developer documents (API reference, authentic
 
 ---
 
+## Personal Reflection
+
+The core concept revolves around students' ability to make a search algorithm that beats out an LLM's search. The difference between the three search algorithm demonstrates the benefits and detriments of each method. For example, the Naive LLM method tends to hallucinate while the Retrieval only method returns every doc regardless of actual relevance. By tweaking the retrieval algorithm and combining it with method 3, the search result should be more refined. Students may struggle in really understanding the method in which to retrieve the documents, as they are using Copilot / Claude to aid in their development. This may lead to them instead skipping the analysis of the function. One way I would guide students without giving them the answer is by leading them to review the .md files in the /docs folder again. By parsing it without any technology or tech, they may gain a better understanding of what the algorithm ought to return. 
+
+
 ## Setup
 
 ### 1. Install Python dependencies
